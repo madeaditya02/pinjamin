@@ -2,11 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { FiDownload, FiFilter, FiPlus, FiSearch } from "react-icons/fi";
+import { useRouter, useSearchParams } from "next/navigation";
+import dayjs from "dayjs";
+import "dayjs/locale/id";
+import { FiChevronLeft, FiChevronRight, FiPlus, FiSearch } from "react-icons/fi";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { api } from "@/services/api";
+
+dayjs.locale("id");
 
 type PengajuanItem = {
   id: number;
@@ -14,38 +19,81 @@ type PengajuanItem = {
   tanggal_selesai?: string;
   status?: string;
   alasan?: string;
-  items?: Array<{ inventaris_id?: number; jumlah_dipinjam?: number }>;
 };
 
+type PaginationMeta = {
+  page?: number;
+  limit?: number;
+  total?: number;
+};
+
+const statusOptions = [
+  { label: "Semua Status", value: "" },
+  { label: "Pending", value: "pending" },
+  { label: "Approved", value: "approved" },
+  { label: "Rejected", value: "rejected" },
+  { label: "Dipinjam", value: "dipinjam" },
+  { label: "Selesai", value: "selesai" },
+];
+
 export default function PengajuanPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<PengajuanItem[]>([]);
-  const [search, setSearch] = useState("");
+  const [meta, setMeta] = useState<PaginationMeta>({});
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [status, setStatus] = useState(searchParams.get("status") ?? "");
+  const [page, setPage] = useState(Number(searchParams.get("page") ?? "1"));
+  const [loading, setLoading] = useState(true);
+
+  const limit = 5;
+  const totalPages = Math.max(1, Math.ceil((meta.total ?? 0) / (meta.limit ?? limit) || 1));
 
   useEffect(() => {
     let active = true;
+    Promise.resolve().then(() => {
+      if (active) setLoading(true);
+    });
+
     api
-      .get("/pengajuan/me")
+      .get("/pengajuan/me", {
+        params: {
+          page,
+          limit,
+          status: status || undefined,
+          search: search || undefined,
+        },
+      })
       .then((response) => {
         if (!active) return;
-        setData(response.data?.data?.data ?? response.data?.data ?? []);
+        const payload = response.data?.data ?? response.data ?? {};
+        setData(payload.data ?? payload ?? []);
+        setMeta(payload.pagination ?? {});
       })
       .catch(() => {
         if (!active) return;
         setData([]);
+        setMeta({});
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoading(false);
       });
+
     return () => {
       active = false;
     };
-  }, []);
+  }, [page, status, search]);
 
-  const filtered = useMemo(() => {
-    const query = search.toLowerCase();
-    return data.filter((item) =>
-      [item.status, item.alasan, item.tanggal_mulai, item.tanggal_selesai]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(query))
-    );
-  }, [data, search]);
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (page > 1) params.set("page", String(page));
+    if (status) params.set("status", status);
+    if (search) params.set("q", search);
+    router.replace(`/pengajuan${params.toString() ? `?${params}` : ""}`);
+  }, [page, router, search, status]);
+
+  const filteredCount = useMemo(() => data.length, [data]);
 
   return (
     <DashboardLayout title="Riwayat Peminjaman">
@@ -68,30 +116,46 @@ export default function PengajuanPage() {
 
         <Card className="overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#d5dbef] px-6 py-5">
+            {/* Saya memutuskan mematikan fitur ini */}
             {/* <div className="flex min-w-[320px] max-w-[420px] flex-1 items-center rounded-[4px] border border-[#c7cfe7] bg-white px-3 py-2.5">
               <FiSearch className="mr-2 text-[20px] text-slate-500" />
               <input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setPage(1);
+                  setSearch(event.target.value);
+                }}
                 placeholder="Cari berdasarkan alasan atau status..."
                 className="w-full border-0 outline-none placeholder:text-slate-400"
               />
-            </div> */}
-            <div className="flex gap-2 items-center">
-              Filter by status :
-              <button className="inline-flex h-10 items-center gap-2 rounded-[4px] border border-[#c7cfe7] bg-white px-4 text-[15px] text-slate-700">
-                <FiFilter />
-                Filter
-              </button>
-              {/* <button className="inline-flex h-10 items-center gap-2 rounded-[4px] border border-[#c7cfe7] bg-white px-4 text-[15px] text-slate-700">
-                <FiDownload />
-                Ekspor
-              </button> */}
             </div>
+
+            <select
+              value={status}
+              onChange={(event) => {
+                setPage(1);
+                setStatus(event.target.value);
+              }}
+              className="h-10 min-w-[180px] rounded-[4px] border border-[#c7cfe7] bg-white px-4 text-[15px] text-slate-700 outline-none"
+            >
+              {statusOptions.map((option) => (
+                <option key={option.value || "all"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select> */}
           </div>
-          {
-            filtered.length > 0 ? (
-              <>
+
+          {loading ? (
+            <div className="space-y-3 p-6">
+              <div className="h-12 rounded bg-slate-100" />
+              <div className="h-12 rounded bg-slate-100" />
+              <div className="h-12 rounded bg-slate-100" />
+              <div className="h-12 rounded bg-slate-100" />
+              <div className="h-12 rounded bg-slate-100" />
+            </div>
+          ) : data.length ? (
+            <>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[840px]">
                   <thead className="bg-[#f0f3ff] text-[15px] text-slate-600">
@@ -104,37 +168,39 @@ export default function PengajuanPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((item, index) => (
-                      <tr key={item?.id ?? index} className="border-t border-[#dfe4f2]">
+                    {data.map((item) => (
+                      <tr key={item.id} className="border-t border-[#dfe4f2]">
                         <td className="px-6 py-6 text-[16px] text-slate-700">
-                          {item?.tanggal_mulai}
+                          {item.tanggal_mulai ? dayjs(item.tanggal_mulai).format("D MMM YYYY") : "-"}
                         </td>
                         <td className="px-6 py-6 text-[16px] text-slate-700">
-                          {item?.tanggal_selesai}
+                          {item.tanggal_selesai
+                            ? dayjs(item.tanggal_selesai).format("D MMM YYYY")
+                            : "-"}
                         </td>
                         <td className="px-6 py-6">
                           <Badge
                             tone={
-                              item?.status === "approved"
+                              item.status === "approved"
                                 ? "success"
-                                : item?.status === "dipinjam"
+                                : item.status === "dipinjam"
                                   ? "info"
-                                  : item?.status === "menunggu"
+                                  : item.status === "pending"
                                     ? "warning"
-                                    : item?.status === "ditolak"
+                                    : item.status === "rejected"
                                       ? "danger"
                                       : "neutral"
                             }
                             className="normal-case tracking-normal"
                           >
-                            {item?.status}
+                            {item.status ?? "-"}
                           </Badge>
                         </td>
                         <td className="px-6 py-6 text-[16px] text-slate-700">
-                          {item?.alasan}
+                          {item.alasan ?? "-"}
                         </td>
                         <td className="px-6 py-6 text-right">
-                          <Link href={`/pengajuan/${item.id}`} type="button" className="font-medium text-[#155dfc]">
+                          <Link href={`/pengajuan/${item.id}`} className="font-medium text-[#155dfc]">
                             Detail
                           </Link>
                         </td>
@@ -144,29 +210,68 @@ export default function PengajuanPage() {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between border-t border-[#dfe4f2] px-6 py-4 text-[15px] text-slate-600">
-                <span>Menampilkan 1 - 5 dari 24 entri</span>
+              <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#dfe4f2] px-6 py-4 text-[15px] text-slate-600">
+                <span>
+                  Menampilkan {filteredCount} data
+                  {meta.total ? ` dari ${meta.total} entri` : ""}
+                </span>
                 <div className="flex items-center gap-2">
-                  {["<", "1", "2", "3", "...", "5", ">"].map((item) => (
+                  <button
+                    type="button"
+                    disabled={page <= 1}
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-[#c7cfe7] bg-white px-3 disabled:opacity-40"
+                  >
+                    <FiChevronLeft />
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, index) => index + 1)
+                    .slice(0, 5)
+                    .map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setPage(value)}
+                        className={`h-9 min-w-9 rounded-[4px] border px-3 ${
+                          value === page
+                            ? "border-[#155dfc] bg-[#155dfc] text-white"
+                            : "border-[#c7cfe7] bg-white text-slate-600"
+                        }`}
+                      >
+                        {value}
+                      </button>
+                    ))}
+
+                  {totalPages > 5 ? <span className="px-1 text-slate-500">...</span> : null}
+
+                  {totalPages > 5 ? (
                     <button
-                      key={item}
                       type="button"
+                      onClick={() => setPage(totalPages)}
                       className={`h-9 min-w-9 rounded-[4px] border px-3 ${
-                        item === "1"
+                        page === totalPages
                           ? "border-[#155dfc] bg-[#155dfc] text-white"
                           : "border-[#c7cfe7] bg-white text-slate-600"
                       }`}
                     >
-                      {item}
+                      {totalPages}
                     </button>
-                  ))}
+                  ) : null}
+
+                  <button
+                    type="button"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                    className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-[#c7cfe7] bg-white px-3 disabled:opacity-40"
+                  >
+                    <FiChevronRight />
+                  </button>
                 </div>
               </div>
-              </>
-            ) : (
-              <div className="p-8 text-center text-slate-600 text-lg">Tidak ada data.</div>
-            )
-          }
+            </>
+          ) : (
+            <div className="p-8 text-center text-slate-600 text-lg">Tidak ada data.</div>
+          )}
         </Card>
       </div>
     </DashboardLayout>
