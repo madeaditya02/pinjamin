@@ -38,6 +38,10 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
       .then((response) => {
         if (!active) return;
         setUser(response.data?.data ?? response.data ?? null);
+        const resolvedUser = response.data?.data ?? response.data ?? null;
+        if (resolvedUser?.role) {
+          document.cookie = `role=${encodeURIComponent(resolvedUser.role)}; path=/`;
+        }
       })
       .catch(() => {
         if (!active) return;
@@ -67,7 +71,13 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
 
   const role = user?.role ?? "umum";
   const navItems =
-    role === "organisasi"
+    role === "admin"
+      ? [
+          { href: "/", label: "Dashboard", icon: FiGrid },
+          { href: "/users", label: "Kelola User", icon: FiClipboard },
+          { href: "/kategori-inventaris", label: "Kelola Kategori Inventaris", icon: FiPackage },
+        ]
+      : role === "organisasi"
       ? [
           { href: "/", label: "Dashboard", icon: FiGrid },
           { href: "/peminjaman", label: "Kelola Peminjaman", icon: FiClipboard },

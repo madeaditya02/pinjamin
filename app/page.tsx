@@ -23,6 +23,11 @@ type DashboardDataOrg = {
   barang_dipinjam?: number;
   total_barang?: number;
 };
+type DashboardDataAdmin = {
+  total_user?: number;
+  total_inventaris?: number;
+  total_pengajuan?: number;
+};
 type RecentItem = {
   id?: number;
   tanggal_mulai?: string;
@@ -253,7 +258,7 @@ function DashboardOrganisasi({ loading }: { loading: boolean }) {
       label: "Permintaan Masuk",
       value: data.permintaan_masuk ?? 0,
       icon: "📋",
-      note: "+3 dari kemarin",
+      note: "",
     },
     {
       label: "Barang Dipinjam",
@@ -306,6 +311,76 @@ function DashboardOrganisasi({ loading }: { loading: boolean }) {
   );
 }
 
+function DashboardAdmin({ loading }: { loading: boolean }) {
+  const [data, setData] = useState<DashboardDataAdmin | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (loading) return;
+
+    api
+      .get("/admin/dashboard")
+      .then((response) => {
+        if (!active) return;
+        setData(response.data?.data ?? response.data ?? null);
+      })
+      .catch(() => {
+        if (!active) return;
+        setData(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [loading]);
+
+  if (loading || !data) {
+    return (
+      <div className="space-y-7">
+        <div className="h-[182px] rounded-[9px] bg-slate-100" />
+        <div className="grid gap-5 lg:grid-cols-3">
+          <div className="h-[146px] rounded-[4px] bg-slate-100" />
+          <div className="h-[146px] rounded-[4px] bg-slate-100" />
+          <div className="h-[146px] rounded-[4px] bg-slate-100" />
+        </div>
+      </div>
+    );
+  }
+
+  const cards = [
+    { label: "Total User", value: data.total_user ?? 0 },
+    { label: "Total Inventaris", value: data.total_inventaris ?? 0 },
+    { label: "Total Pengajuan", value: data.total_pengajuan ?? 0 },
+  ];
+
+  return (
+    <div className="space-y-7">
+      <section className="relative overflow-hidden rounded-[9px] bg-[#155dfc] px-6 py-6 text-white shadow-[0_10px_30px_rgba(21,93,252,0.18)] md:px-7 md:py-7">
+        <div className="max-w-3xl">
+          <h2 className="text-[34px] font-medium leading-tight">
+            Halo, Selamat Datang di Pinjamin
+          </h2>
+          <p className="mt-2 max-w-2xl text-[16px] leading-7 text-white/85">
+            Kelola data master dan akses seluruh aktivitas platform dengan mudah.
+          </p>
+        </div>
+        <div className="absolute right-0 top-0 h-full w-[120px] bg-white/5" />
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-3">
+        {cards.map((card) => (
+          <Card key={card.label} className="px-5 py-6">
+            <div className="text-[17px] text-slate-600">{card.label}</div>
+            <div className="mt-3 text-[46px] font-bold leading-none text-slate-800">
+              {String(card.value).padStart(2, "0")}
+            </div>
+          </Card>
+        ))}
+      </section>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [role, setRole] = useState<string>("umum");
   const [loadingRole, setLoadingRole] = useState(true);
@@ -338,7 +413,13 @@ export default function HomePage() {
 
   return (
     <DashboardLayout title="Dashboard">
-      {role === "organisasi" ? <DashboardOrganisasi loading={loadingRole} /> : <DashboardUmum loading={loadingRole} />}
+      {role === "admin" ? (
+        <DashboardAdmin loading={loadingRole} />
+      ) : role === "organisasi" ? (
+        <DashboardOrganisasi loading={loadingRole} />
+      ) : (
+        <DashboardUmum loading={loadingRole} />
+      )}
     </DashboardLayout>
   );
 }

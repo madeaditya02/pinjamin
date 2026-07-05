@@ -27,15 +27,19 @@ export default function LoginPage() {
       const token = response.data?.data?.token;
       const user = response.data?.data?.user;
       const savedUser = JSON.stringify({
-          id: user?.id,
-          name: user?.name,
-          email: user?.email,
-          role: user?.role,
-        });
+        id: user?.id,
+        name: user?.name,
+        email: user?.email,
+        role: user?.role,
+      });
 
       if (token) {
         window.localStorage.setItem("token", token);
         window.localStorage.setItem("pinjamin_user", savedUser);
+        document.cookie = `token=${encodeURIComponent(token)}; path=/`;
+        if (user?.role) {
+          document.cookie = `role=${encodeURIComponent(user.role)}; path=/`;
+        }
       }
 
       router.push("/");

@@ -1,45 +1,61 @@
-# FRONTEND AGENT CONTEXT - FASE 4: Modul CRUD Inventaris Organisasi
+# FRONTEND AGENT CONTEXT - FASE 5: Modul Admin & Global Route Authorization
 
-## 1. Core Objective Phase 4
-Membangun fitur CRUD (Create, Read, Update, Delete) untuk pengelolaan barang inventaris oleh role **Organisasi**. Karena tidak ada desain spesifik, AI **wajib mendaur ulang (reuse)** komponen UI yang sudah dibuat pada fase sebelumnya (seperti Data Table, Input Form, dan Button) agar antarmuka tetap seragam.
+## 1. Core Objective Phase 5
+Membangun antarmuka untuk *role* **Admin** menggunakan pola *Modal Box* untuk CRUD data master, dan **paling krusial:** mengimplementasikan sistem proteksi rute (*Route Authorization*) secara global untuk memastikan setiap URL hanya bisa diakses oleh *role* yang berhak.
 
-## 2. Layout & Global Rules
-* Seluruh halaman di modul ini harus dibungkus menggunakan `DashboardLayout`.
-* **State Management Data:** Gunakan `useState` dan `useEffect` untuk integrasi API.
-* **Loading & Error:** Implementasikan *loading state* (spinner/disable tombol) saat request API berlangsung dan tampilkan *toast/alert* untuk respons sukses atau *error*.
+## 2. Route Authorization & Security Rules (MUTLAK)
+AI wajib membuat mekanisme perlindungan halaman (misalnya menggunakan `middleware.ts`, *Higher-Order Component*, atau *layout check*) yang memblokir akses jika *role* pengguna tidak sesuai.
+* **Aturan Hak Akses:**
+  * Akses **Admin** Saja: `/users`, `/kategori-inventaris`.
+  * Akses **Organisasi** Saja: `/inventaris/*`, `/peminjaman/*`.
+  * Akses **Umum & Organisasi**: `/pengajuan/*`.
+* **Tindakan Pemblokiran:**
+  * Jika pengguna belum login (tidak ada token), *redirect* ke `/login`.
+  * Jika pengguna sudah login namun mengakses rute di luar hak aksesnya (misal: Umum mengakses `/inventaris`), *redirect* kembali ke `/` (Dashboard) atau tampilkan halaman "403 Forbidden".
 
-## 3. Page Specifications & API Integration
+## 3. Shared Routes & Sidebar Updates
+* **Dashboard (`/app/page.tsx`):**
+  Perbarui halaman ini agar mendeteksi *role* `admin`. Jika `role === 'admin'`, render komponen `<DashboardAdmin />`.
+* **Sidebar (`DashboardLayout`):**
+  Tambahkan logika navigasi untuk Admin:
+  1. Dashboard (`/`)
+  2. Kelola User (`/users`)
+  3. Kelola Kategori Inventaris (`/kategori-inventaris`)
 
-### A. List Inventaris (`/app/inventaris/page.tsx`)
-* **Tampilan:** Data Table standar.
-* **Fitur Utama:** Pencarian (Search) dan Pagination dari sisi server (kirim parameter ke API).
-* **Kolom Tabel:** Foto (`gambar_inventaris`), Nama Barang, Jumlah, Kondisi, Kategori (`nama_kategori`), dan Aksi (tombol edit dan delete).
-* **Tombol Aksi:** * "Tambah Barang" (di atas tabel, mengarah ke `/inventaris/tambah`).
-  * "Edit" (di setiap baris, mengarah ke `/inventaris/[id]/edit`).
-  * "Hapus" (menampilkan konfirmasi sebelum menembak endpoint DELETE).
-* **API Endpoint:** `GET /api/organisasi/inventaris`.
+## 4. Page Specifications & API Integration (Role Admin)
 
-### B. Form Tambah Inventaris (`/app/inventaris/tambah/page.tsx`)
-* **Tampilan:** Form input terstruktur (bisa menggunakan grid 2 kolom agar rapi).
-* **Input Fields:**
-  1. `kategori_inventaris_id`: Select dropdown. Lakukan *fetch* ke `GET /api/kategori` saat komponen di-mount untuk mengisi opsi.
-  2. `nama_inventaris`: Text input.
-  3. `gambar_inventaris`: File input (hanya menerima *image*).
-  4. `deskripsi_inventaris`: Textarea.
-  5. `jumlah_inventaris`: Number input.
-  6. `harga_inventaris`: Number input.
-  7. `kondisi`: Select dropdown (Opsi statis: "Baik" dan "Rusak").
-* **Data Handling (`organisasi_id`):** Ambil `organisasi_id` dari data *user* yang sedang login (melalui *state* atau *token* yang tersimpan).
-* **Submit Action:** **Wajib menggunakan `FormData`** karena mengandung *file upload*. 
-* **API Endpoint:** `POST /api/organisasi/inventaris`.
+### A. Dashboard Admin (Komponen `<DashboardAdmin />`)
+* **Tampilan:** Metrik Cards (desain identik dengan dashboard organisasi).
+* **Integrasi API:** `GET /api/admin/dashboard`.
+* **Data Output:** "Total User", "Total Inventaris", dan "Total Pengajuan".
 
-### C. Form Edit Inventaris (`/app/inventaris/[id]/edit/page.tsx`)
-* **Tampilan & Input:** Identik dengan form pada halaman Tambah.
-* **Data Initialization:** Saat halaman dimuat, lakukan *fetch* ke `GET /api/organisasi/inventaris/{id}` (jika endpoint detail tersedia) atau manipulasi *state* dari tabel sebelumnya untuk mengisi nilai bawaan (*default value*) pada form.
-* **File Upload di Mode Edit:** Input `gambar_inventaris` bersifat opsional. Jika *user* tidak mengunggah gambar baru, jangan masukkan *key* gambar ke dalam `FormData` atau sesuaikan dengan aturan backend.
-* **API Endpoint:** `PUT /api/organisasi/inventaris/{id}`.
+### B. Kelola Kategori Inventaris (`/app/kategori-inventaris/page.tsx`)
+* **Tampilan Utama:** Data Table dengan kolom `nama_kategori` dan `aksi` (Edit, Delete). Terdapat tombol "Tambah Kategori" di atas tabel.
+* **API List:** `GET /api/kategori`.
+* **Modal Tambah/Edit:**
+  * Gunakan komponen Modal Box.
+  * **Input:** Text input untuk `nama_kategori`.
+  * **API Add:** `POST /api/admin/kategori`.
+  * **API Edit:** `PUT /api/admin/kategori/{id}`.
+* **Interaksi:** Tutup Modal dan *re-fetch* data pada tabel setelah sukses.
 
-## 4. Coding Conventions untuk Codex
-* **FormData Implementation:** Ingat bahwa Axios membutuhkan *header* `Content-Type: multipart/form-data` saat mengirim `FormData`. Pastikan interceptor tidak me-override ini menjadi `application/json` secara paksa untuk endpoint ini.
-* **Image Rendering:** Gunakan tag `<img>` atau Next.js `<Image>` (dengan konfigurasi `next.config.js` yang tepat untuk domain eksternal) untuk merender foto pada tabel list barang. Berikan *fallback image* jika URL gambar rusak atau kosong.
-* **Konsistensi UI:** Gunakan *class* Tailwind yang sama persis dengan form atau tabel di halaman `/pengajuan`. Jangan menciptakan gaya visual (*styling*) baru yang melenceng dari halaman sebelumnya.
+### C. Kelola User (`/app/users/page.tsx`)
+* **Tampilan Utama:** Data Table dengan kolom `nama`, `email`, `role` (gunakan Badge warna-warni), dan `aksi` (Edit, Delete). Terdapat tombol "Tambah User" di atas tabel.
+* **API List:** `GET /api/admin/users`.
+* **Modal Tambah/Edit:**
+  * Gunakan komponen Modal Box.
+  * **Input Form:**
+    1. `nama`: Text input.
+    2. `email`: Email input.
+    3. `role`: Select dropdown (opsi: 'umum', 'organisasi', 'admin').
+    4. `password`: Password input. (Pada mode *Edit*, buat input ini opsional/kosong secara bawaan).
+  * **API Add:** `POST /api/admin/users`.
+  * **API Edit:** `PUT /api/admin/users/{id}`.
+* **Interaksi:** Tutup Modal dan *re-fetch* tabel setelah sukses.
+
+## 5. Modal Implementation & UI Rules untuk Codex
+* **State Management Modal:** Gunakan `useState` untuk mengontrol *visibility* Modal (`isOpen`) dan melacak data yang sedang diedit (`selectedData`).
+* **Komponen Modal Reusable:** Buat komponen `Modal` yang memiliki *Header* (Judul), *Body* (Form/Konten), dan *Footer* (Tombol Batal & Simpan).
+* **Styling Consistency:** Gaya tabel, tombol (Primary, Danger, Secondary), dan input *wajib* disamakan persis dengan halaman CRUD di Fase 4.
+* **Loading & Feedback:** Form di dalam modal wajib di-disable (atau tombol simpan menampilkan *spinner*) saat menembak API. Tampilkan notifikasi (Toast/Alert) untuk hasil *error* atau sukses.
+* **Delete Action:** Sebelum mengeksekusi fungsi DELETE API, wajib menampilkan modal/dialog konfirmasi sederhana.
