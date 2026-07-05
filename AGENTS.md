@@ -1,45 +1,45 @@
-# FRONTEND AGENT CONTEXT - FASE 3: Modul Organisasi & Conditional Routing
+# FRONTEND AGENT CONTEXT - FASE 4: Modul CRUD Inventaris Organisasi
 
-## 1. Core Objective Phase 3
-Membangun antarmuka khusus untuk pengguna dengan *role* **Organisasi**, mengelola *route* yang tumpang tindih dengan *role* Umum, dan memastikan setiap interaksi API dilengkapi dengan indikator *loading* serta *pagination* yang akurat.
+## 1. Core Objective Phase 4
+Membangun fitur CRUD (Create, Read, Update, Delete) untuk pengelolaan barang inventaris oleh role **Organisasi**. Karena tidak ada desain spesifik, AI **wajib mendaur ulang (reuse)** komponen UI yang sudah dibuat pada fase sebelumnya (seperti Data Table, Input Form, dan Button) agar antarmuka tetap seragam.
 
-## 2. Shared Routes & Conditional Rendering Rule
-AI wajib menangani halaman yang path-nya sama tetapi kontennya berbeda berdasarkan *role* user (Umum vs Organisasi):
-* **Dashboard (`/app/page.tsx`):**
-  Modifikasi halaman ini agar mendeteksi *role* pengguna. 
-  - Jika `role === 'umum'`, render komponen `<DashboardUmum />`.
-  - Jika `role === 'organisasi'`, render komponen `<DashboardOrganisasi />`.
-* **Sidebar (`DashboardLayout`):**
-  Pastikan menu navigasi di *Sidebar* menyesuaikan secara dinamis. Role Organisasi memiliki tambahan menu: "Kelola Peminjaman" (`/peminjaman`) dan "Kelola Inventaris" (`/inventaris`).
-* **Halaman `/pengajuan` & `/pengajuan/tambah`:**
-  Halaman ini berbagi fungsi yang persis sama antara Umum dan Organisasi. Biarkan kodenya seperti yang sudah dibuat di Fase 2, pastikan saja *Sidebar* tetap aktif.
+## 2. Layout & Global Rules
+* Seluruh halaman di modul ini harus dibungkus menggunakan `DashboardLayout`.
+* **State Management Data:** Gunakan `useState` dan `useEffect` untuk integrasi API.
+* **Loading & Error:** Implementasikan *loading state* (spinner/disable tombol) saat request API berlangsung dan tampilkan *toast/alert* untuk respons sukses atau *error*.
 
-## 3. Page Specifications & API Integration (Role Organisasi)
+## 3. Page Specifications & API Integration
 
-### A. Dashboard Organisasi (Komponen `<DashboardOrganisasi />`)
-* **Tampilan:** Kartu metrik (Metrik Cards).
-* **Integrasi API:** `GET /api/organisasi/dashboard`.
-* **Data Output:** "Permintaan Masuk", "Barang Dipinjam", dan "Total Barang".
+### A. List Inventaris (`/app/inventaris/page.tsx`)
+* **Tampilan:** Data Table standar.
+* **Fitur Utama:** Pencarian (Search) dan Pagination dari sisi server (kirim parameter ke API).
+* **Kolom Tabel:** Foto (`gambar_inventaris`), Nama Barang, Jumlah, Kondisi, Kategori (`nama_kategori`), dan Aksi (tombol edit dan delete).
+* **Tombol Aksi:** * "Tambah Barang" (di atas tabel, mengarah ke `/inventaris/tambah`).
+  * "Edit" (di setiap baris, mengarah ke `/inventaris/[id]/edit`).
+  * "Hapus" (menampilkan konfirmasi sebelum menembak endpoint DELETE).
+* **API Endpoint:** `GET /api/organisasi/inventaris`.
 
-### B. Kelola Peminjaman (`/app/peminjaman/page.tsx`)
-* **Tampilan:** Data Table untuk daftar permintaan masuk.
-* **Fitur Wajib:** Kotak pencarian (Search) dan **Pagination terintegrasi API**. Parameter pencarian/halaman harus dikirim ke *backend* dan data di-update.
-* **Aksi:** Tombol "Review" mengarah ke `/peminjaman/[id]`. **Kondisional:** Jika status peminjaman adalah `approved`, tampilkan juga tombol "Kembalikan" yang mengarah ke `/peminjaman/[id]/return`.
-* **API:** `GET /api/organisasi/pengajuan`.
+### B. Form Tambah Inventaris (`/app/inventaris/tambah/page.tsx`)
+* **Tampilan:** Form input terstruktur (bisa menggunakan grid 2 kolom agar rapi).
+* **Input Fields:**
+  1. `kategori_inventaris_id`: Select dropdown. Lakukan *fetch* ke `GET /api/kategori` saat komponen di-mount untuk mengisi opsi.
+  2. `nama_inventaris`: Text input.
+  3. `gambar_inventaris`: File input (hanya menerima *image*).
+  4. `deskripsi_inventaris`: Textarea.
+  5. `jumlah_inventaris`: Number input.
+  6. `harga_inventaris`: Number input.
+  7. `kondisi`: Select dropdown (Opsi statis: "Baik" dan "Rusak").
+* **Data Handling (`organisasi_id`):** Ambil `organisasi_id` dari data *user* yang sedang login (melalui *state* atau *token* yang tersimpan).
+* **Submit Action:** **Wajib menggunakan `FormData`** karena mengandung *file upload*. 
+* **API Endpoint:** `POST /api/organisasi/inventaris`.
 
-### C. Detail Peminjaman (`/app/peminjaman/[id]/page.tsx`)
-* **Tampilan:** Informasi detail peminjam (Nama, tanggal/waktu mulai & selesai, alasan, link berkas `surat_pengajuan`). Di bawahnya terdapat tabel *list* barang (Foto, Nama Inventaris, Jumlah Dipinjam).
-* **Aksi:** Tombol "Approve" dan "Reject".
-* **API Fetch:** `GET /api/organisasi/pengajuan/{id}`.
-* **API Action:** `PUT /api/organisasi/pengajuan/{id}/status`. (Kirim payload status: 'approved' atau 'rejected').
+### C. Form Edit Inventaris (`/app/inventaris/[id]/edit/page.tsx`)
+* **Tampilan & Input:** Identik dengan form pada halaman Tambah.
+* **Data Initialization:** Saat halaman dimuat, lakukan *fetch* ke `GET /api/organisasi/inventaris/{id}` (jika endpoint detail tersedia) atau manipulasi *state* dari tabel sebelumnya untuk mengisi nilai bawaan (*default value*) pada form.
+* **File Upload di Mode Edit:** Input `gambar_inventaris` bersifat opsional. Jika *user* tidak mengunggah gambar baru, jangan masukkan *key* gambar ke dalam `FormData` atau sesuaikan dengan aturan backend.
+* **API Endpoint:** `PUT /api/organisasi/inventaris/{id}`.
 
-### D. Form Pengembalian (`/app/peminjaman/[id]/return/page.tsx`)
-* **Tampilan:** Identik dengan halaman Detail Peminjaman, namun pada tabel *list* barang terdapat **tambahan 1 kolom input angka** untuk mencatat jumlah barang yang dikembalikan.
-* **Aksi:** Tombol "Kembalikan" di akhir halaman.
-* **API Action:** `POST /api/organisasi/pengajuan/{id}/return`. Format *payload* sesuaikan dengan struktur data pengembalian barang.
-
-## 4. Strict UI/UX Rules untuk Codex
-* **Loading Indicators (MUTLAK):** Setiap kali komponen melakukan *fetching* data ke API (saat *mount*, pindah halaman *pagination*, atau *search*), **wajib** menampilkan *loading spinner*, *skeleton loader*, atau men-disable tombol/tabel agar *user experience* terjaga.
-* **API Pagination:** Implementasikan logika *pagination* murni dari API (bukan *slice array* di sisi *client*). Kirim parameter seperti `?page=2&limit=10` ke *endpoint* jika dibutuhkan oleh backend.
-* **Error Handling:** Jika *request API* gagal, tampilkan pesan *error* (misalnya dengan komponen *Toast* atau *Alert*) dan kembalikan *state loading* ke `false`.
-* Jangan gunakan *state management* eksternal. Manfaatkan `useState`, `useEffect`, dan *Custom Hooks* untuk memisahkan logika pemanggilan API dari komponen UI.
+## 4. Coding Conventions untuk Codex
+* **FormData Implementation:** Ingat bahwa Axios membutuhkan *header* `Content-Type: multipart/form-data` saat mengirim `FormData`. Pastikan interceptor tidak me-override ini menjadi `application/json` secara paksa untuk endpoint ini.
+* **Image Rendering:** Gunakan tag `<img>` atau Next.js `<Image>` (dengan konfigurasi `next.config.js` yang tepat untuk domain eksternal) untuk merender foto pada tabel list barang. Berikan *fallback image* jika URL gambar rusak atau kosong.
+* **Konsistensi UI:** Gunakan *class* Tailwind yang sama persis dengan form atau tabel di halaman `/pengajuan`. Jangan menciptakan gaya visual (*styling*) baru yang melenceng dari halaman sebelumnya.

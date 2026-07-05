@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
 import "dayjs/locale/id";
-import { FiChevronLeft, FiChevronRight, FiFilter, FiSearch } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -27,20 +27,11 @@ type PaginationMeta = {
   total?: number;
 };
 
-const statusOptions = [
-  { label: "Semua Status", value: "" },
-  { label: "Pending", value: "pending" },
-  { label: "Approved", value: "approved" },
-  { label: "Rejected", value: "rejected" },
-];
-
 export default function PeminjamanPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [data, setData] = useState<Item[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({});
-  const [search, setSearch] = useState(searchParams.get("search") ?? "");
-  const [status, setStatus] = useState(searchParams.get("status") ?? "");
   const [page, setPage] = useState(Number(searchParams.get("page") ?? "1"));
   const [loading, setLoading] = useState(true);
 
@@ -58,8 +49,6 @@ export default function PeminjamanPage() {
         params: {
           page,
           limit,
-          search: search || undefined,
-          status: status || undefined,
         },
       })
       .then((response) => {
@@ -81,15 +70,13 @@ export default function PeminjamanPage() {
     return () => {
       active = false;
     };
-  }, [page, search, status]);
+  }, [page]);
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (page > 1) params.set("page", String(page));
-    if (search) params.set("search", search);
-    if (status) params.set("status", status);
     router.replace(`/peminjaman${params.toString() ? `?${params}` : ""}`);
-  }, [page, router, search, status]);
+  }, [page, router]);
 
   const pages = useMemo(() => {
     const output: number[] = [];
@@ -108,50 +95,7 @@ export default function PeminjamanPage() {
         </div>
 
         <Card className="overflow-hidden">
-          {/* <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#d5dbef] px-6 py-5">
-            <div className="flex min-w-[320px] max-w-[420px] flex-1 items-center rounded-[4px] border border-[#c7cfe7] bg-white px-3 py-2.5">
-              <FiSearch className="mr-2 text-[20px] text-slate-500" />
-              <input
-                value={search}
-                onChange={(event) => {
-                  setPage(1);
-                  setSearch(event.target.value);
-                }}
-                placeholder="Cari berdasarkan alasan atau tanggal..."
-                className="w-full border-0 outline-none placeholder:text-slate-400"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <select
-                  value={status}
-                  onChange={(event) => {
-                    setPage(1);
-                    setStatus(event.target.value);
-                  }}
-                  className="h-10 min-w-[160px] rounded-[4px] border border-[#c7cfe7] bg-white px-4 text-[15px] text-slate-700 outline-none"
-                >
-                  {statusOptions.map((option) => (
-                    <option key={option.value || "all"} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setPage(1);
-                  setSearch("");
-                  setStatus("");
-                }}
-                className="inline-flex h-10 items-center gap-2 rounded-[4px] border border-[#c7cfe7] bg-white px-4 text-[15px] text-slate-700"
-              >
-                <FiFilter />
-                Filter
-              </button>
-            </div>
-          </div> */}
+          <div className="border-b border-[#d5dbef] px-6 py-5" />
 
           {loading ? (
             <div className="space-y-3 p-6">
