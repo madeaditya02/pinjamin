@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
 import "dayjs/locale/id";
-import { FiChevronLeft, FiChevronRight, FiPlus, FiSearch } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiPlus } from "react-icons/fi";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -27,22 +27,11 @@ type PaginationMeta = {
   total?: number;
 };
 
-const statusOptions = [
-  { label: "Semua Status", value: "" },
-  { label: "Pending", value: "pending" },
-  { label: "Approved", value: "approved" },
-  { label: "Rejected", value: "rejected" },
-  { label: "Dipinjam", value: "dipinjam" },
-  { label: "Selesai", value: "selesai" },
-];
-
 export default function PengajuanPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [data, setData] = useState<PengajuanItem[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({});
-  const [search, setSearch] = useState(searchParams.get("q") ?? "");
-  const [status, setStatus] = useState(searchParams.get("status") ?? "");
   const [page, setPage] = useState(Number(searchParams.get("page") ?? "1"));
   const [loading, setLoading] = useState(true);
 
@@ -60,8 +49,6 @@ export default function PengajuanPage() {
         params: {
           page,
           limit,
-          status: status || undefined,
-          search: search || undefined,
         },
       })
       .then((response) => {
@@ -83,17 +70,13 @@ export default function PengajuanPage() {
     return () => {
       active = false;
     };
-  }, [page, status, search]);
+  }, [page]);
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (page > 1) params.set("page", String(page));
-    if (status) params.set("status", status);
-    if (search) params.set("q", search);
     router.replace(`/pengajuan${params.toString() ? `?${params}` : ""}`);
-  }, [page, router, search, status]);
-
-  const filteredCount = useMemo(() => data.length, [data]);
+  }, [page, router]);
 
   return (
     <DashboardLayout title="Riwayat Peminjaman">
@@ -115,36 +98,7 @@ export default function PengajuanPage() {
         </div>
 
         <Card className="overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#d5dbef] px-6 py-5">
-            {/* Saya memutuskan mematikan fitur ini */}
-            {/* <div className="flex min-w-[320px] max-w-[420px] flex-1 items-center rounded-[4px] border border-[#c7cfe7] bg-white px-3 py-2.5">
-              <FiSearch className="mr-2 text-[20px] text-slate-500" />
-              <input
-                value={search}
-                onChange={(event) => {
-                  setPage(1);
-                  setSearch(event.target.value);
-                }}
-                placeholder="Cari berdasarkan alasan atau status..."
-                className="w-full border-0 outline-none placeholder:text-slate-400"
-              />
-            </div>
-
-            <select
-              value={status}
-              onChange={(event) => {
-                setPage(1);
-                setStatus(event.target.value);
-              }}
-              className="h-10 min-w-[180px] rounded-[4px] border border-[#c7cfe7] bg-white px-4 text-[15px] text-slate-700 outline-none"
-            >
-              {statusOptions.map((option) => (
-                <option key={option.value || "all"} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select> */}
-          </div>
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#d5dbef] px-6 py-5" />
 
           {loading ? (
             <div className="space-y-3 p-6">
@@ -211,10 +165,7 @@ export default function PengajuanPage() {
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#dfe4f2] px-6 py-4 text-[15px] text-slate-600">
-                <span>
-                  Menampilkan {filteredCount} data
-                  {meta.total ? ` dari ${meta.total} entri` : ""}
-                </span>
+                <span>Menampilkan {data.length} data{meta.total ? ` dari ${meta.total} entri` : ""}</span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"

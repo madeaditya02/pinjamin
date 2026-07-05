@@ -35,15 +35,21 @@ export default function TambahPengajuanPage() {
   const [inventarisList, setInventarisList] = useState<Inventaris[]>([]);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
   const [alasan, setAlasan] = useState("");
+  const [loadingOrganisasi, setLoadingOrganisasi] = useState(true);
   const [loadingInventaris, setLoadingInventaris] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    Promise.resolve().then(() => setLoadingOrganisasi(true));
     api
       .get("/organisasi")
       .then((response) => {
         setOrganisasiList(response.data?.data?.data ?? response.data?.data ?? []);
-      });
+      })
+      .catch(() => {
+        setOrganisasiList([]);
+      })
+      .finally(() => setLoadingOrganisasi(false));
   }, []);
 
   useEffect(() => {
@@ -170,25 +176,34 @@ export default function TambahPengajuanPage() {
 
           <Card className="p-6">
             <div className="mb-4 text-[16px] text-slate-700">Pilih Organisasi</div>
-            <div className="relative">
-              <select
-                value={organisasiId}
-                onChange={(event) => setOrganisasiId(event.target.value)}
-                className="h-12 w-full appearance-none rounded-[4px] border border-[#8992b8] px-4 pr-10 outline-none"
-              >
-                <option value="">Pilih salah satu...</option>
-                {organisasiList.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name ?? org.nama ?? org.email ?? `Organisasi ${org.id}`}
-                  </option>
-                ))}
-              </select>
-              <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[20px] text-slate-500" />
-            </div>
-            <div className="mt-3 flex items-start gap-2 text-[14px] text-slate-500">
-              <FiInfo className="mt-0.5 shrink-0" />
-              <span>Aset yang tersedia akan bergantung pada organisasi yang dipilih.</span>
-            </div>
+            {loadingOrganisasi ? (
+              <div className="space-y-3">
+                <div className="h-12 rounded-[4px] bg-slate-100" />
+                <div className="h-5 w-72 rounded bg-slate-100" />
+              </div>
+            ) : (
+              <>
+                <div className="relative">
+                  <select
+                    value={organisasiId}
+                    onChange={(event) => setOrganisasiId(event.target.value)}
+                    className="h-12 w-full appearance-none rounded-[4px] border border-[#8992b8] px-4 pr-10 outline-none"
+                  >
+                    <option value="">Pilih salah satu...</option>
+                    {organisasiList.map((org) => (
+                      <option key={org.id} value={org.id}>
+                        {org.name ?? org.nama ?? org.email ?? `Organisasi ${org.id}`}
+                      </option>
+                    ))}
+                  </select>
+                  <FiChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[20px] text-slate-500" />
+                </div>
+                <div className="mt-3 flex items-start gap-2 text-[14px] text-slate-500">
+                  <FiInfo className="mt-0.5 shrink-0" />
+                  <span>Aset yang tersedia akan bergantung pada organisasi yang dipilih.</span>
+                </div>
+              </>
+            )}
           </Card>
         </div>
 

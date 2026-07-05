@@ -28,9 +28,13 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loadingUser, setLoadingUser] = useState(true);
 
   useEffect(() => {
     let active = true;
+    Promise.resolve().then(() => {
+      if (active) setLoadingUser(true);
+    });
 
     api
       .get("/me")
@@ -41,6 +45,10 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
       .catch(() => {
         if (!active) return;
         setUser(null);
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoadingUser(false);
       });
 
     return () => {
@@ -110,17 +118,29 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
                 type="button"
                 onClick={() => setMenuOpen((value) => !value)}
                 className="flex items-center gap-3 text-left"
+                disabled={loadingUser}
               >
                 <div className="text-right">
-                  <div className="text-[14px] font-medium text-slate-900">
-                    {user?.name ?? "Loading..."}
-                  </div>
-                  <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                    {user?.role ?? "UMUM"}
-                  </div>
+                  {loadingUser ? (
+                    <>
+                      <div className="ml-auto h-4 w-28 rounded bg-slate-200" />
+                      <div className="ml-auto mt-2 h-3 w-20 rounded bg-slate-200" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-[14px] font-medium text-slate-900">
+                        {user?.name ?? "User"}
+                      </div>
+                      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                        {user?.role ?? "UMUM"}
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="h-9 w-9 overflow-hidden rounded-full border border-[#d9def0] bg-white">
-                  {user?.profile_photo ? (
+                  {loadingUser ? (
+                    <div className="h-full w-full animate-pulse bg-slate-200" />
+                  ) : user?.profile_photo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={user.profile_photo}
@@ -138,10 +158,19 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
               {menuOpen ? (
                 <div className="absolute right-0 top-[calc(100%+10px)] w-56 rounded-md border border-[#d9def0] bg-white p-3 shadow-lg">
                   <div className="px-2 py-1">
-                    <div className="text-sm font-semibold text-slate-800">
-                      {user?.name ?? "User"}
-                    </div>
-                    <div className="text-xs text-slate-500">{user?.email ?? ""}</div>
+                    {loadingUser ? (
+                      <>
+                        <div className="h-4 w-32 rounded bg-slate-200" />
+                        <div className="mt-2 h-3 w-40 rounded bg-slate-200" />
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-sm font-semibold text-slate-800">
+                          {user?.name ?? "User"}
+                        </div>
+                        <div className="text-xs text-slate-500">{user?.email ?? ""}</div>
+                      </>
+                    )}
                   </div>
                   <button
                     type="button"

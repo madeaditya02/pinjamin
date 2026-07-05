@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import dayjs from "dayjs";
+import "dayjs/locale/id";
 import { FiClock, FiCheckCircle, FiRefreshCcw, FiArrowRightCircle } from "react-icons/fi";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { api } from "@/services/api";
+
+dayjs.locale("id");
 
 type DashboardData = {
   aktif?: number;
@@ -26,9 +30,13 @@ type RecentItem = {
 export default function HomePage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [recent, setRecent] = useState<RecentItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
+    Promise.resolve().then(() => {
+      if (active) setLoading(true);
+    });
 
     Promise.all([api.get("/umum/dashboard"), api.get("/pengajuan/me?limit=3")])
       .then(([dashboardResponse, pengajuanResponse]) => {
@@ -40,6 +48,10 @@ export default function HomePage() {
         if (!active) return;
         setData(null);
         setRecent([]);
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoading(false);
       });
 
     return () => {
@@ -53,7 +65,22 @@ export default function HomePage() {
 
   return (
     <DashboardLayout title="Dashboard">
-      <div className="space-y-7">
+      {loading ? (
+        <div className="space-y-7">
+          <div className="h-[182px] rounded-[9px] bg-slate-100" />
+          <div className="grid gap-5 lg:grid-cols-3">
+            <div className="h-[146px] rounded-[4px] bg-slate-100" />
+            <div className="h-[146px] rounded-[4px] bg-slate-100" />
+            <div className="h-[146px] rounded-[4px] bg-slate-100" />
+          </div>
+          <div className="h-[304px] rounded-[4px] bg-slate-100" />
+          <div className="flex gap-4">
+            <div className="h-[54px] w-[210px] rounded-[6px] bg-slate-100" />
+            <div className="h-[54px] w-[180px] rounded-[6px] bg-slate-100" />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-7">
         <section className="relative overflow-hidden rounded-[9px] bg-[#155dfc] px-6 py-6 text-white shadow-[0_10px_30px_rgba(21,93,252,0.18)] md:px-7 md:py-7">
           <div className="max-w-3xl">
             <h2 className="text-[34px] font-medium leading-tight">
@@ -128,15 +155,17 @@ export default function HomePage() {
                   <th className="px-6 py-4 font-medium text-right">Action</th>
                 </tr>
               </thead>
-              <tbody>
-                {(recent.length ? recent : [null, null, null]).map((item, index) => (
-                  <tr key={item?.id ?? index} className="border-t border-[#e2e7f5]">
-                    <td className="px-6 py-5 text-[16px] text-slate-700">
-                      {item?.tanggal_mulai ?? "-"}
-                    </td>
-                    <td className="px-6 py-5 text-[16px] text-slate-700">
-                      {item?.tanggal_selesai ?? "-"}
-                    </td>
+                <tbody>
+                  {(recent.length ? recent : [null, null, null]).map((item, index) => (
+                    <tr key={item?.id ?? index} className="border-t border-[#e2e7f5]">
+                      <td className="px-6 py-5 text-[16px] text-slate-700">
+                        {item?.tanggal_mulai ? dayjs(item.tanggal_mulai).format("D MMM YYYY") : "-"}
+                      </td>
+                      <td className="px-6 py-5 text-[16px] text-slate-700">
+                        {item?.tanggal_selesai
+                          ? dayjs(item.tanggal_selesai).format("D MMM YYYY")
+                          : "-"}
+                      </td>
                     <td className="px-6 py-5">
                       <Badge
                         tone={
@@ -157,9 +186,9 @@ export default function HomePage() {
                       {item?.alasan ?? "-"}
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <button type="button" className="font-medium text-[#155dfc]">
+                      <Link href={`/pengajuan/${item?.id}`} type="button" className="font-medium text-[#155dfc]">
                         Detail
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -183,8 +212,9 @@ export default function HomePage() {
             <FiClock className="text-[22px]" />
             Riwayat Saya
           </Link>
+          </div>
         </div>
-      </div>
+      )}
     </DashboardLayout>
   );
 }
