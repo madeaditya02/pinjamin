@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
@@ -94,175 +94,177 @@ export default function InventarisPage() {
   };
 
   return (
-    <DashboardLayout title="Kelola Inventaris">
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-[31px] font-bold text-slate-800">Kelola Inventaris</h2>
-            <p className="mt-1 text-[16px] text-slate-600">
-              Tambah, ubah, dan hapus inventaris organisasi.
-            </p>
-          </div>
-          <Link
-            href="/inventaris/tambah"
-            className="inline-flex h-10 items-center gap-2 rounded-[4px] bg-[#155dfc] px-4 text-[15px] font-medium text-white"
-          >
-            <FiPlus />
-            Tambah Barang
-          </Link>
-        </div>
-
-        <Card className="overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#d5dbef] px-6 py-5">
-            <div className="flex min-w-[320px] max-w-[420px] flex-1 items-center rounded-[4px] border border-[#c7cfe7] bg-white px-3 py-2.5">
-              <FiSearch className="mr-2 text-[20px] text-slate-500" />
-              <input
-                value={search}
-                onChange={(event) => {
-                  setPage(1);
-                  setSearch(event.target.value);
-                }}
-                placeholder="Cari nama barang..."
-                className="w-full border-0 outline-none placeholder:text-slate-400"
-              />
+    <Suspense fallback={<div className="p-4 text-center text-lg text-slate-700">Memuat data...</div>}>
+      <DashboardLayout title="Kelola Inventaris">
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-[31px] font-bold text-slate-800">Kelola Inventaris</h2>
+              <p className="mt-1 text-[16px] text-slate-600">
+                Tambah, ubah, dan hapus inventaris organisasi.
+              </p>
             </div>
+            <Link
+              href="/inventaris/tambah"
+              className="inline-flex h-10 items-center gap-2 rounded-[4px] bg-[#155dfc] px-4 text-[15px] font-medium text-white"
+            >
+              <FiPlus />
+              Tambah Barang
+            </Link>
           </div>
 
-          {loading ? (
-            <div className="space-y-3 p-6">
-              <div className="h-12 rounded bg-slate-100" />
-              <div className="h-12 rounded bg-slate-100" />
-              <div className="h-12 rounded bg-slate-100" />
-              <div className="h-12 rounded bg-slate-100" />
+          <Card className="overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#d5dbef] px-6 py-5">
+              <div className="flex min-w-[320px] max-w-[420px] flex-1 items-center rounded-[4px] border border-[#c7cfe7] bg-white px-3 py-2.5">
+                <FiSearch className="mr-2 text-[20px] text-slate-500" />
+                <input
+                  value={search}
+                  onChange={(event) => {
+                    setPage(1);
+                    setSearch(event.target.value);
+                  }}
+                  placeholder="Cari nama barang..."
+                  className="w-full border-0 outline-none placeholder:text-slate-400"
+                />
+              </div>
             </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px]">
-                  <thead className="bg-[#f0f3ff] text-[15px] text-slate-600">
-                    <tr>
-                      <th className="px-6 py-4 text-left font-medium">Foto</th>
-                      <th className="px-6 py-4 text-left font-medium">Nama Barang</th>
-                      <th className="px-6 py-4 text-left font-medium">Jumlah</th>
-                      <th className="px-6 py-4 text-left font-medium">Kondisi</th>
-                      <th className="px-6 py-4 text-left font-medium">Kategori</th>
-                      <th className="px-6 py-4 text-right font-medium">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.map((item) => (
-                      <tr key={item.id} className="border-t border-[#dfe4f2]">
-                        <td className="px-6 py-4">
-                          <div className="h-16 w-16 overflow-hidden rounded-[4px] border border-[#dfe4f2] bg-slate-100">
-                            {item.gambar_inventaris ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={item.gambar_inventaris}
-                                alt={item.nama_inventaris ?? "Inventaris"}
-                                onError={fallbackImage}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : null}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-[16px] font-medium text-slate-800">
-                          {item.nama_inventaris ?? "-"}
-                        </td>
-                        <td className="px-6 py-4 text-[16px] text-slate-700">
-                          {item.jumlah_inventaris ?? 0}
-                        </td>
-                        <td className="px-6 py-4">
-                          <Badge
-                            tone={item.kondisi?.toLowerCase() === "rusak" ? "danger" : "success"}
-                            className="normal-case tracking-normal"
-                          >
-                            {item.kondisi ?? "-"}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 text-[16px] text-slate-700">
-                          {item.nama_kategori ?? "-"}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-end gap-2">
-                            <Link
-                              href={`/inventaris/${item.id}/edit`}
-                              className="inline-flex h-9 items-center gap-2 rounded-[4px] border border-[#c7cfe7] bg-white px-4 text-[15px] font-medium text-[#155dfc]"
-                            >
-                              <FiEdit2 />
-                              Edit
-                            </Link>
-                            <button
-                              type="button"
-                              disabled={deletingId === item.id}
-                              onClick={() => handleDelete(item.id)}
-                              className="inline-flex h-9 items-center gap-2 rounded-[4px] border border-red-200 bg-white px-4 text-[15px] font-medium text-red-600 disabled:opacity-60"
-                            >
-                              <FiTrash2 />
-                              {deletingId === item.id ? "Menghapus..." : "Hapus"}
-                            </button>
-                          </div>
-                        </td>
+
+            {loading ? (
+              <div className="space-y-3 p-6">
+                <div className="h-12 rounded bg-slate-100" />
+                <div className="h-12 rounded bg-slate-100" />
+                <div className="h-12 rounded bg-slate-100" />
+                <div className="h-12 rounded bg-slate-100" />
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[900px]">
+                    <thead className="bg-[#f0f3ff] text-[15px] text-slate-600">
+                      <tr>
+                        <th className="px-6 py-4 text-left font-medium">Foto</th>
+                        <th className="px-6 py-4 text-left font-medium">Nama Barang</th>
+                        <th className="px-6 py-4 text-left font-medium">Jumlah</th>
+                        <th className="px-6 py-4 text-left font-medium">Kondisi</th>
+                        <th className="px-6 py-4 text-left font-medium">Kategori</th>
+                        <th className="px-6 py-4 text-right font-medium">Aksi</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#dfe4f2] px-6 py-4 text-[15px] text-slate-600">
-                <span>
-                  Menampilkan {data.length} dari {meta.total ?? 0} inventaris
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={page <= 1}
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-[#c7cfe7] bg-white px-3 disabled:opacity-40"
-                  >
-                    <FiChevronLeft />
-                  </button>
-                  {pages.map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setPage(value)}
-                      className={`h-9 min-w-9 rounded-[4px] border px-3 ${
-                        value === page
-                          ? "border-[#155dfc] bg-[#155dfc] text-white"
-                          : "border-[#c7cfe7] bg-white text-slate-600"
-                      }`}
-                    >
-                      {value}
-                    </button>
-                  ))}
-                  {totalPages > 5 ? <span className="px-1 text-slate-500">...</span> : null}
-                  {totalPages > 5 ? (
-                    <button
-                      type="button"
-                      onClick={() => setPage(totalPages)}
-                      className={`h-9 min-w-9 rounded-[4px] border px-3 ${
-                        page === totalPages
-                          ? "border-[#155dfc] bg-[#155dfc] text-white"
-                          : "border-[#c7cfe7] bg-white text-slate-600"
-                      }`}
-                    >
-                      {totalPages}
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                    className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-[#c7cfe7] bg-white px-3 disabled:opacity-40"
-                  >
-                    <FiChevronRight />
-                  </button>
+                    </thead>
+                    <tbody>
+                      {data.map((item) => (
+                        <tr key={item.id} className="border-t border-[#dfe4f2]">
+                          <td className="px-6 py-4">
+                            <div className="h-16 w-16 overflow-hidden rounded-[4px] border border-[#dfe4f2] bg-slate-100">
+                              {item.gambar_inventaris ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={item.gambar_inventaris}
+                                  alt={item.nama_inventaris ?? "Inventaris"}
+                                  onError={fallbackImage}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : null}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-[16px] font-medium text-slate-800">
+                            {item.nama_inventaris ?? "-"}
+                          </td>
+                          <td className="px-6 py-4 text-[16px] text-slate-700">
+                            {item.jumlah_inventaris ?? 0}
+                          </td>
+                          <td className="px-6 py-4">
+                            <Badge
+                              tone={item.kondisi?.toLowerCase() === "rusak" ? "danger" : "success"}
+                              className="normal-case tracking-normal"
+                            >
+                              {item.kondisi ?? "-"}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 text-[16px] text-slate-700">
+                            {item.nama_kategori ?? "-"}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-end gap-2">
+                              <Link
+                                href={`/inventaris/${item.id}/edit`}
+                                className="inline-flex h-9 items-center gap-2 rounded-[4px] border border-[#c7cfe7] bg-white px-4 text-[15px] font-medium text-[#155dfc]"
+                              >
+                                <FiEdit2 />
+                                Edit
+                              </Link>
+                              <button
+                                type="button"
+                                disabled={deletingId === item.id}
+                                onClick={() => handleDelete(item.id)}
+                                className="inline-flex h-9 items-center gap-2 rounded-[4px] border border-red-200 bg-white px-4 text-[15px] font-medium text-red-600 disabled:opacity-60"
+                              >
+                                <FiTrash2 />
+                                {deletingId === item.id ? "Menghapus..." : "Hapus"}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-            </>
-          )}
-        </Card>
-      </div>
-    </DashboardLayout>
+
+                <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#dfe4f2] px-6 py-4 text-[15px] text-slate-600">
+                  <span>
+                    Menampilkan {data.length} dari {meta.total ?? 0} inventaris
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={page <= 1}
+                      onClick={() => setPage((current) => Math.max(1, current - 1))}
+                      className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-[#c7cfe7] bg-white px-3 disabled:opacity-40"
+                    >
+                      <FiChevronLeft />
+                    </button>
+                    {pages.map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setPage(value)}
+                        className={`h-9 min-w-9 rounded-[4px] border px-3 ${
+                          value === page
+                            ? "border-[#155dfc] bg-[#155dfc] text-white"
+                            : "border-[#c7cfe7] bg-white text-slate-600"
+                        }`}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                    {totalPages > 5 ? <span className="px-1 text-slate-500">...</span> : null}
+                    {totalPages > 5 ? (
+                      <button
+                        type="button"
+                        onClick={() => setPage(totalPages)}
+                        className={`h-9 min-w-9 rounded-[4px] border px-3 ${
+                          page === totalPages
+                            ? "border-[#155dfc] bg-[#155dfc] text-white"
+                            : "border-[#c7cfe7] bg-white text-slate-600"
+                        }`}
+                      >
+                        {totalPages}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                      className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-[#c7cfe7] bg-white px-3 disabled:opacity-40"
+                    >
+                      <FiChevronRight />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </Card>
+        </div>
+      </DashboardLayout>
+    </Suspense>
   );
 }

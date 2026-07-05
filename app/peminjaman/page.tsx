@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
@@ -85,143 +85,145 @@ export default function PeminjamanPage() {
   }, [totalPages]);
 
   return (
-    <DashboardLayout title="Kelola Peminjaman">
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-[31px] font-bold text-slate-800">Kelola Peminjaman</h2>
-          <p className="mt-1 text-[16px] text-slate-600">
-            Review dan kelola semua pengajuan peminjaman organisasi Anda.
-          </p>
-        </div>
+    <Suspense fallback={<div className="p-4 text-center text-lg text-slate-700">Memuat data...</div>}>
+      <DashboardLayout title="Kelola Peminjaman">
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-[31px] font-bold text-slate-800">Kelola Peminjaman</h2>
+            <p className="mt-1 text-[16px] text-slate-600">
+              Review dan kelola semua pengajuan peminjaman organisasi Anda.
+            </p>
+          </div>
 
-        <Card className="overflow-hidden">
-          <div className="border-b border-[#d5dbef] px-6 py-5" />
+          <Card className="overflow-hidden">
+            <div className="border-b border-[#d5dbef] px-6 py-5" />
 
-          {loading ? (
-            <div className="space-y-3 p-6">
-              <div className="h-12 rounded bg-slate-100" />
-              <div className="h-12 rounded bg-slate-100" />
-              <div className="h-12 rounded bg-slate-100" />
-              <div className="h-12 rounded bg-slate-100" />
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[840px]">
-                  <thead className="bg-[#f0f3ff] text-[15px] text-slate-600">
-                    <tr>
-                      <th className="px-6 py-4 text-left font-medium">Tanggal Pinjam</th>
-                      <th className="px-6 py-4 text-left font-medium">Tanggal Selesai</th>
-                      <th className="px-6 py-4 text-left font-medium">Status</th>
-                      <th className="px-6 py-4 text-left font-medium">Alasan</th>
-                      <th className="px-6 py-4 text-right font-medium">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(data.length ? data : []).map((item) => (
-                      <tr key={item.id} className="border-t border-[#dfe4f2]">
-                        <td className="px-6 py-6 text-[16px] text-slate-700">
-                          {item.tanggal_mulai ? dayjs(item.tanggal_mulai).format("D MMM YYYY") : "-"}
-                        </td>
-                        <td className="px-6 py-6 text-[16px] text-slate-700">
-                          {item.tanggal_selesai ? dayjs(item.tanggal_selesai).format("D MMM YYYY") : "-"}
-                        </td>
-                        <td className="px-6 py-6">
-                          <Badge
-                            tone={
-                              item.status === "approved"
-                                ? "success"
-                                : item.status === "rejected"
-                                  ? "danger"
-                                  : item.status === "returned"
-                                    ? "info"
-                                    : "warning"
-                            }
-                            className="normal-case tracking-normal"
-                          >
-                            {item.status ?? "-"}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-6 text-[16px] text-slate-700">{item.alasan ?? "-"}</td>
-                        <td className="px-6 py-6 text-right">
-                          <div className="inline-flex items-center gap-2">
-                            <Link
-                              href={`/peminjaman/${item.id}`}
-                              className="inline-flex h-9 items-center rounded-[4px] bg-[#155dfc] px-4 text-[15px] font-medium text-white"
-                            >
-                              Review
-                            </Link>
-                            {item.status === "approved" ? (
-                              <Link
-                                href={`/peminjaman/${item.id}/return`}
-                                className="inline-flex h-9 items-center rounded-[4px] border border-[#155dfc] bg-white px-4 text-[15px] font-medium text-[#155dfc]"
-                              >
-                                Kembalikan
-                              </Link>
-                            ) : null}
-                          </div>
-                        </td>
+            {loading ? (
+              <div className="space-y-3 p-6">
+                <div className="h-12 rounded bg-slate-100" />
+                <div className="h-12 rounded bg-slate-100" />
+                <div className="h-12 rounded bg-slate-100" />
+                <div className="h-12 rounded bg-slate-100" />
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[840px]">
+                    <thead className="bg-[#f0f3ff] text-[15px] text-slate-600">
+                      <tr>
+                        <th className="px-6 py-4 text-left font-medium">Tanggal Pinjam</th>
+                        <th className="px-6 py-4 text-left font-medium">Tanggal Selesai</th>
+                        <th className="px-6 py-4 text-left font-medium">Status</th>
+                        <th className="px-6 py-4 text-left font-medium">Alasan</th>
+                        <th className="px-6 py-4 text-right font-medium">Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#dfe4f2] px-6 py-4 text-[15px] text-slate-600">
-                <span>
-                  Menampilkan {data.length} dari {meta.total ?? 0} peminjaman
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={page <= 1}
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-[#c7cfe7] bg-white px-3 disabled:opacity-40"
-                  >
-                    <FiChevronLeft />
-                  </button>
-                  {pages.map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setPage(value)}
-                      className={`h-9 min-w-9 rounded-[4px] border px-3 ${
-                        value === page
-                          ? "border-[#155dfc] bg-[#155dfc] text-white"
-                          : "border-[#c7cfe7] bg-white text-slate-600"
-                      }`}
-                    >
-                      {value}
-                    </button>
-                  ))}
-                  {totalPages > 5 ? <span className="px-1 text-slate-500">...</span> : null}
-                  {totalPages > 5 ? (
-                    <button
-                      type="button"
-                      onClick={() => setPage(totalPages)}
-                      className={`h-9 min-w-9 rounded-[4px] border px-3 ${
-                        page === totalPages
-                          ? "border-[#155dfc] bg-[#155dfc] text-white"
-                          : "border-[#c7cfe7] bg-white text-slate-600"
-                      }`}
-                    >
-                      {totalPages}
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                    className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-[#c7cfe7] bg-white px-3 disabled:opacity-40"
-                  >
-                    <FiChevronRight />
-                  </button>
+                    </thead>
+                    <tbody>
+                      {(data.length ? data : []).map((item) => (
+                        <tr key={item.id} className="border-t border-[#dfe4f2]">
+                          <td className="px-6 py-6 text-[16px] text-slate-700">
+                            {item.tanggal_mulai ? dayjs(item.tanggal_mulai).format("D MMM YYYY") : "-"}
+                          </td>
+                          <td className="px-6 py-6 text-[16px] text-slate-700">
+                            {item.tanggal_selesai ? dayjs(item.tanggal_selesai).format("D MMM YYYY") : "-"}
+                          </td>
+                          <td className="px-6 py-6">
+                            <Badge
+                              tone={
+                                item.status === "approved"
+                                  ? "success"
+                                  : item.status === "rejected"
+                                    ? "danger"
+                                    : item.status === "returned"
+                                      ? "info"
+                                      : "warning"
+                              }
+                              className="normal-case tracking-normal"
+                            >
+                              {item.status ?? "-"}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-6 text-[16px] text-slate-700">{item.alasan ?? "-"}</td>
+                          <td className="px-6 py-6 text-right">
+                            <div className="inline-flex items-center gap-2">
+                              <Link
+                                href={`/peminjaman/${item.id}`}
+                                className="inline-flex h-9 items-center rounded-[4px] bg-[#155dfc] px-4 text-[15px] font-medium text-white"
+                              >
+                                Review
+                              </Link>
+                              {item.status === "approved" ? (
+                                <Link
+                                  href={`/peminjaman/${item.id}/return`}
+                                  className="inline-flex h-9 items-center rounded-[4px] border border-[#155dfc] bg-white px-4 text-[15px] font-medium text-[#155dfc]"
+                                >
+                                  Kembalikan
+                                </Link>
+                              ) : null}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-            </>
-          )}
-        </Card>
-      </div>
-    </DashboardLayout>
+
+                <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#dfe4f2] px-6 py-4 text-[15px] text-slate-600">
+                  <span>
+                    Menampilkan {data.length} dari {meta.total ?? 0} peminjaman
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={page <= 1}
+                      onClick={() => setPage((current) => Math.max(1, current - 1))}
+                      className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-[#c7cfe7] bg-white px-3 disabled:opacity-40"
+                    >
+                      <FiChevronLeft />
+                    </button>
+                    {pages.map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setPage(value)}
+                        className={`h-9 min-w-9 rounded-[4px] border px-3 ${
+                          value === page
+                            ? "border-[#155dfc] bg-[#155dfc] text-white"
+                            : "border-[#c7cfe7] bg-white text-slate-600"
+                        }`}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                    {totalPages > 5 ? <span className="px-1 text-slate-500">...</span> : null}
+                    {totalPages > 5 ? (
+                      <button
+                        type="button"
+                        onClick={() => setPage(totalPages)}
+                        className={`h-9 min-w-9 rounded-[4px] border px-3 ${
+                          page === totalPages
+                            ? "border-[#155dfc] bg-[#155dfc] text-white"
+                            : "border-[#c7cfe7] bg-white text-slate-600"
+                        }`}
+                      >
+                        {totalPages}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                      className="inline-flex h-9 items-center gap-1 rounded-[4px] border border-[#c7cfe7] bg-white px-3 disabled:opacity-40"
+                    >
+                      <FiChevronRight />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </Card>
+        </div>
+      </DashboardLayout>
+    </Suspense>
   );
 }
