@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { FiArrowRight, FiInbox, FiLock, FiMail, FiUser } from "react-icons/fi";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -18,23 +19,23 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setErrorMessage(null);
 
     if (password !== confirmPassword) {
-      setError("Konfirmasi password tidak sama");
+      setErrorMessage("Konfirmasi password tidak sama");
       return;
     }
 
     if (!agree) {
-      setError("Setujui syarat dan ketentuan terlebih dahulu");
+      setErrorMessage("Setujui syarat dan ketentuan terlebih dahulu");
       return;
     }
 
     setLoading(true);
-    setError("");
 
     try {
       await api.post("/register", { name, email, password });
@@ -42,8 +43,8 @@ export default function RegisterPage() {
     } catch (err) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Registrasi gagal";
-      setError(message);
+          ?.message || "Terjadi kesalahan pada server";
+      setErrorMessage(message);
     } finally {
       setLoading(false);
     }
@@ -66,6 +67,8 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="mt-10 space-y-5">
+          {errorMessage ? <Alert message={errorMessage} /> : null}
+
           <Input
             label="Nama Lengkap"
             icon={<FiUser />}
@@ -122,12 +125,6 @@ export default function RegisterPage() {
               Pinjamin.
             </span>
           </label>
-
-          {error ? (
-            <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
-            </p>
-          ) : null}
 
           <Button
             type="submit"

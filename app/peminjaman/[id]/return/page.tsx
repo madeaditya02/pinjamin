@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/id";
 import { FiArrowLeft, FiCheckSquare, FiCalendar, FiFileText } from "react-icons/fi";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
+import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { api } from "@/services/api";
@@ -41,6 +42,7 @@ export default function ReturnPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -77,6 +79,7 @@ export default function ReturnPage() {
   const handleSubmit = async () => {
     if (!data) return;
     setSubmitting(true);
+    setErrorMessage(null);
     try {
       await api.post(`/organisasi/pengajuan/${params.id}/return`, {
         items: (data.items ?? [])
@@ -87,6 +90,11 @@ export default function ReturnPage() {
           .filter((item) => item.inventaris_id),
       });
       router.push("/peminjaman");
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Terjadi kesalahan pada server";
+      setErrorMessage(message);
     } finally {
       setSubmitting(false);
     }
@@ -236,6 +244,8 @@ export default function ReturnPage() {
               </div>
             </Card>
           </div>
+
+          {errorMessage ? <Alert message={errorMessage} /> : null}
 
           <div className="flex justify-end">
             <button

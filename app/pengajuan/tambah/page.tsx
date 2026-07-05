@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { FiChevronDown, FiUpload, FiInfo, FiSend } from "react-icons/fi";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Badge } from "@/components/ui/Badge";
+import { Alert } from "@/components/ui/Alert";
 import { Card } from "@/components/ui/Card";
 import { api } from "@/services/api";
 
@@ -38,6 +39,7 @@ export default function TambahPengajuanPage() {
   const [loadingOrganisasi, setLoadingOrganisasi] = useState(true);
   const [loadingInventaris, setLoadingInventaris] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.resolve().then(() => setLoadingOrganisasi(true));
@@ -88,6 +90,7 @@ export default function TambahPengajuanPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
+    setErrorMessage(null);
 
     try {
       const formData = new FormData();
@@ -104,6 +107,11 @@ export default function TambahPengajuanPage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       router.push("/pengajuan");
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Terjadi kesalahan pada server";
+      setErrorMessage(message);
     } finally {
       setSubmitting(false);
     }
@@ -118,6 +126,8 @@ export default function TambahPengajuanPage() {
             Silakan lengkapi formulir di bawah ini untuk mengajukan peminjaman aset.
           </p>
         </div>
+
+        {errorMessage ? <Alert message={errorMessage == 'items wajib diisi' ? "Pilih barang dan masukkan jumlahnya terlebih dahulu" : errorMessage} /> : null}
 
         <Card className="grid gap-5 p-6">
           <div className="grid gap-5 lg:grid-cols-2">
@@ -269,7 +279,7 @@ export default function TambahPengajuanPage() {
                 {!loadingInventaris && !displayedInventaris.length ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
-                      {organisasiId ? "Tidak ada inventaris tersedia." : "Pilih organisasi terlebih dahulu."}
+                      {organisasiId && tanggalMulai && waktuMulai && tanggalSelesai && waktuSelesai ? "Tidak ada inventaris tersedia." : "Pilih tanggal dan organisasi terlebih dahulu."}
                     </td>
                   </tr>
                 ) : null}

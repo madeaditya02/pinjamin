@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Badge } from "@/components/ui/Badge";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -21,6 +22,7 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: "", email: "", role: "umum", password: "" });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -43,18 +45,21 @@ export default function UsersPage() {
   const openAdd = () => {
     setSelected(null);
     setForm({ name: "", email: "", role: "umum", password: "" });
+    setErrorMessage(null);
     setIsOpen(true);
   };
 
   const openEdit = (item: User) => {
     setSelected(item);
     setForm({ name: item.name ?? "", email: item.email ?? "", role: item.role ?? "umum", password: "" });
+    setErrorMessage(null);
     setIsOpen(true);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSaving(true);
+    setErrorMessage(null);
     try {
       if (selected) {
         const payload: Record<string, string> = {
@@ -69,6 +74,11 @@ export default function UsersPage() {
       }
       setIsOpen(false);
       await fetchData();
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Terjadi kesalahan pada server";
+      setErrorMessage(message);
     } finally {
       setSaving(false);
     }
@@ -176,6 +186,8 @@ export default function UsersPage() {
         }
       >
         <form id="user-form" className="space-y-4" onSubmit={handleSubmit}>
+          {errorMessage ? <Alert message={errorMessage} /> : null}
+
           <Input
             label="Nama"
             value={form.name}

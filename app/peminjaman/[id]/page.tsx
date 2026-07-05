@@ -8,6 +8,7 @@ import "dayjs/locale/id";
 import { FiArrowLeft, FiCheckCircle, FiCalendar, FiFileText, FiXCircle } from "react-icons/fi";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Badge } from "@/components/ui/Badge";
+import { Alert } from "@/components/ui/Alert";
 import { Card } from "@/components/ui/Card";
 import { api } from "@/services/api";
 
@@ -39,6 +40,7 @@ export default function PeminjamanDetailPage() {
   const [data, setData] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<"approved" | "rejected" | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -68,6 +70,7 @@ export default function PeminjamanDetailPage() {
 
   const handleStatus = async (status: "approved" | "rejected") => {
     setActionLoading(status);
+    setErrorMessage(null);
     try {
       const loggedUser = JSON.parse(window.localStorage.getItem("pinjamin_user") ?? '{}');
       await api.put(`/organisasi/pengajuan/${params.id}/status`, {
@@ -75,6 +78,11 @@ export default function PeminjamanDetailPage() {
         approver_id: loggedUser?.id ?? 2,
       });
       router.push("/peminjaman");
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Terjadi kesalahan pada server";
+      setErrorMessage(message);
     } finally {
       setActionLoading(null);
     }
@@ -209,6 +217,7 @@ export default function PeminjamanDetailPage() {
               </div>
             </Card>
           </div>
+          {errorMessage ? <Alert message={errorMessage} /> : null}
           
           {data.status !== "returned" && (
           <div className="flex justify-end gap-4">

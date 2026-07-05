@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { FiArrowRight, FiInbox, FiLock, FiMail } from "react-icons/fi";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -15,12 +16,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-    setError("");
+    setErrorMessage(null);
 
     try {
       const response = await api.post("/login", { email, password });
@@ -46,8 +47,8 @@ export default function LoginPage() {
     } catch (err) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Login gagal";
-      setError(message);
+          ?.message || "Terjadi kesalahan pada server";
+      setErrorMessage(message);
     } finally {
       setLoading(false);
     }
@@ -70,6 +71,8 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="mt-10 space-y-6">
+          {errorMessage ? <Alert message={errorMessage} /> : null}
+
           <Input
             label="Email"
             icon={<FiMail />}
@@ -89,12 +92,6 @@ export default function LoginPage() {
             placeholder="••••••••"
             required
           />
-
-          {error ? (
-            <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
-            </p>
-          ) : null}
 
           <Button
             type="submit"

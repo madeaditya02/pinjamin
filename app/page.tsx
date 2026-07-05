@@ -147,6 +147,7 @@ function DashboardUmum({ loading }: { loading: boolean }) {
           </Link>
         </div>
         <div className="overflow-x-auto">
+          {recent && recent.length > 0 ? (
           <table className="w-full min-w-[700px] text-left">
             <thead className="bg-[#f0f3ff] text-[13px] uppercase tracking-[0.12em] text-slate-500">
               <tr>
@@ -158,7 +159,7 @@ function DashboardUmum({ loading }: { loading: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {(recent.length ? recent : [null, null, null]).map((item, index) => (
+              {recent.map((item, index) => (
                 <tr key={item?.id ?? index} className="border-t border-[#e2e7f5]">
                   <td className="px-6 py-5 text-[16px] text-slate-700">
                     {item?.tanggal_mulai ? dayjs(item.tanggal_mulai).format("D MMM YYYY") : "-"}
@@ -194,6 +195,11 @@ function DashboardUmum({ loading }: { loading: boolean }) {
               ))}
             </tbody>
           </table>
+          ) : (
+            <div className="px-6 py-5 text-center text-[16px] text-slate-700">
+              Belum ada data peminjaman.
+            </div>
+          )}
         </div>
       </Card>
 

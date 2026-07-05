@@ -4,6 +4,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FiImage, FiSave } from "react-icons/fi";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -33,6 +34,7 @@ export default function EditInventarisPage() {
   const [kategoriList, setKategoriList] = useState<Kategori[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -71,6 +73,7 @@ export default function EditInventarisPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
+    setErrorMessage(null);
 
     try {
       const formData = new FormData();
@@ -86,6 +89,11 @@ export default function EditInventarisPage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       router.push("/inventaris");
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Terjadi kesalahan pada server";
+      setErrorMessage(message);
     } finally {
       setSubmitting(false);
     }
@@ -112,6 +120,8 @@ export default function EditInventarisPage() {
           </div>
 
           <Card className="grid gap-5 p-6">
+            {errorMessage ? <Alert message={errorMessage} /> : null}
+
             <div className="grid gap-5 lg:grid-cols-2">
               <label className="block">
                 <span className="mb-2 block text-[15px] font-medium text-slate-700">Kategori</span>

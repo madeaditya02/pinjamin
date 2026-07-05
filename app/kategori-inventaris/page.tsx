@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -18,6 +19,7 @@ export default function KategoriInventarisPage() {
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -38,18 +40,21 @@ export default function KategoriInventarisPage() {
   const openAdd = () => {
     setSelected(null);
     setName("");
+    setErrorMessage(null);
     setIsOpen(true);
   };
 
   const openEdit = (item: Category) => {
     setSelected(item);
     setName(item.nama_kategori ?? "");
+    setErrorMessage(null);
     setIsOpen(true);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSaving(true);
+    setErrorMessage(null);
     try {
       if (selected) {
         await api.put(`/admin/kategori/${selected.id}`, { nama_kategori: name });
@@ -58,6 +63,11 @@ export default function KategoriInventarisPage() {
       }
       setIsOpen(false);
       await fetchData();
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Terjadi kesalahan pada server";
+      setErrorMessage(message);
     } finally {
       setSaving(false);
     }
@@ -145,6 +155,8 @@ export default function KategoriInventarisPage() {
         }
       >
         <form id="kategori-form" onSubmit={handleSubmit}>
+          {errorMessage ? <Alert message={errorMessage} /> : null}
+
           <Input
             label="Nama Kategori"
             value={name}
