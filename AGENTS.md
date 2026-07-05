@@ -1,43 +1,45 @@
-# FRONTEND AGENT CONTEXT - FASE 2: Layout Utama & Modul Role Umum
+# FRONTEND AGENT CONTEXT - FASE 3: Modul Organisasi & Conditional Routing
 
-## 1. Core Objective Phase 2
-Membangun `DashboardLayout` utama (Sidebar & Header) serta merampungkan seluruh antarmuka untuk pengguna dengan role **Umum** berdasarkan desain referensi di folder `design/umum`.
+## 1. Core Objective Phase 3
+Membangun antarmuka khusus untuk pengguna dengan *role* **Organisasi**, mengelola *route* yang tumpang tindih dengan *role* Umum, dan memastikan setiap interaksi API dilengkapi dengan indikator *loading* serta *pagination* yang akurat.
 
-## 2. Global Layout Extraction Rule
-* AI wajib membaca desain halaman yang dilampirkan, lalu mengekstrak elemen navigasi menjadi `DashboardLayout` (`/components/layouts/DashboardLayout.tsx`).
-* **Sidebar:** Logo aplikasi di atas, navigasi list (Dashboard, Peminjaman) di tengah.
-* **Header:** Judul Halaman dinamis di kiri, User Popover (Info User & Logout) di kanan.
-* Layout ini akan membungkus seluruh halaman (`children`) di modul ini.
+## 2. Shared Routes & Conditional Rendering Rule
+AI wajib menangani halaman yang path-nya sama tetapi kontennya berbeda berdasarkan *role* user (Umum vs Organisasi):
+* **Dashboard (`/app/page.tsx`):**
+  Modifikasi halaman ini agar mendeteksi *role* pengguna. 
+  - Jika `role === 'umum'`, render komponen `<DashboardUmum />`.
+  - Jika `role === 'organisasi'`, render komponen `<DashboardOrganisasi />`.
+* **Sidebar (`DashboardLayout`):**
+  Pastikan menu navigasi di *Sidebar* menyesuaikan secara dinamis. Role Organisasi memiliki tambahan menu: "Kelola Peminjaman" (`/peminjaman`) dan "Kelola Inventaris" (`/inventaris`).
+* **Halaman `/pengajuan` & `/pengajuan/tambah`:**
+  Halaman ini berbagi fungsi yang persis sama antara Umum dan Organisasi. Biarkan kodenya seperti yang sudah dibuat di Fase 2, pastikan saja *Sidebar* tetap aktif.
 
-## 3. Page Specifications & API Integration (Role Umum)
-Bangun tiga halaman berikut menggunakan Tailwind CSS sesuai dengan desain yang diberikan pengguna.
+## 3. Page Specifications & API Integration (Role Organisasi)
 
-### A. Dashboard Umum (`/app/page.tsx`)
+### A. Dashboard Organisasi (Komponen `<DashboardOrganisasi />`)
 * **Tampilan:** Kartu metrik (Metrik Cards).
-* **Integrasi API:** `GET /api/umum/dashboard`.
-* **Data Output:** Tampilkan angka untuk "Total Peminjaman", "Peminjaman Pending", dan "Peminjaman Di-approved".
+* **Integrasi API:** `GET /api/organisasi/dashboard`.
+* **Data Output:** "Permintaan Masuk", "Barang Dipinjam", dan "Total Barang".
 
-### B. Riwayat Pengajuan (`/app/pengajuan/page.tsx`)
-* **Tampilan:** Data Table. Harus mencakup kotak pencarian (Search), pagination, dan tombol aksi utama "Ajukan Peminjaman" yang melakukan navigasi ke `/pengajuan/tambah`.
-* **Kolom Tabel:** Sesuai desain (contoh: Tanggal, Rentang Waktu, Total Item, Status [Gunakan Badge berwarna]).
-* **Integrasi API:** `GET /api/pengajuan/me`.
+### B. Kelola Peminjaman (`/app/peminjaman/page.tsx`)
+* **Tampilan:** Data Table untuk daftar permintaan masuk.
+* **Fitur Wajib:** Kotak pencarian (Search) dan **Pagination terintegrasi API**. Parameter pencarian/halaman harus dikirim ke *backend* dan data di-update.
+* **Aksi:** Tombol "Review" mengarah ke `/peminjaman/[id]`. **Kondisional:** Jika status peminjaman adalah `approved`, tampilkan juga tombol "Kembalikan" yang mengarah ke `/peminjaman/[id]/return`.
+* **API:** `GET /api/organisasi/pengajuan`.
 
-### C. Form Tambah Pengajuan (`/app/pengajuan/tambah/page.tsx`)
-Halaman ini memiliki interaksi reaktif yang kompleks.
-* **Form Inputs Dasar:**
-  1. Input Tanggal dan Waktu (Mulai & Selesai).
-  2. Input File (untuk `surat_pengajuan` dalam format PDF).
-  3. Select Dropdown untuk "Pilih Organisasi" (Fetch opsi dari `GET /api/organisasi`).
-* **Interaksi Dinamis:**
-  * Saat entitas Organisasi dipilih dari dropdown, lakukan fetch ke `GET /api/organisasi/{organisasi_id}/inventaris/available`.
-  * Tampilkan hasilnya dalam bentuk tabel list barang di bawah form.
-  * **Kolom List Barang:** Foto, Nama Barang, Kondisi, dan kolom terakhir berupa **Input Angka (Quantity)**.
-  * Hanya barang yang input angkanya > 0 yang masuk ke dalam *payload* peminjaman.
-* **Submit Action:** * Gunakan `FormData` (karena mengandung unggahan file PDF) untuk mengirim data ke `POST /api/pengajuan`.
+### C. Detail Peminjaman (`/app/peminjaman/[id]/page.tsx`)
+* **Tampilan:** Informasi detail peminjam (Nama, tanggal/waktu mulai & selesai, alasan, link berkas `surat_pengajuan`). Di bawahnya terdapat tabel *list* barang (Foto, Nama Inventaris, Jumlah Dipinjam).
+* **Aksi:** Tombol "Approve" dan "Reject".
+* **API Fetch:** `GET /api/organisasi/pengajuan/{id}`.
+* **API Action:** `PUT /api/organisasi/pengajuan/{id}/status`. (Kirim payload status: 'approved' atau 'rejected').
 
-## 4. Coding Conventions untuk Codex
-* **Data Fetching:** Gunakan Axios instance yang telah disetup di `services/api.ts`.
-* **Reactivity:** Gunakan `useEffect` untuk memantau perubahan pada state `organisasi_id` agar list barang otomatis ter-update saat dropdown berubah.
-* **Form Handling:** Pastikan state untuk form input (tanggal, file, list barang) terkelola dengan rapi di dalam komponen sebelum disubmit.
-* **UI States:** Wajib menambahkan *loading state* (spinner/skeleton) saat *fetching* data awal dan saat tombol submit ditekan.
-* Jangan menebak field database jika tidak yakin; buat form field yang logis mencerminkan UI.
+### D. Form Pengembalian (`/app/peminjaman/[id]/return/page.tsx`)
+* **Tampilan:** Identik dengan halaman Detail Peminjaman, namun pada tabel *list* barang terdapat **tambahan 1 kolom input angka** untuk mencatat jumlah barang yang dikembalikan.
+* **Aksi:** Tombol "Kembalikan" di akhir halaman.
+* **API Action:** `POST /api/organisasi/pengajuan/{id}/return`. Format *payload* sesuaikan dengan struktur data pengembalian barang.
+
+## 4. Strict UI/UX Rules untuk Codex
+* **Loading Indicators (MUTLAK):** Setiap kali komponen melakukan *fetching* data ke API (saat *mount*, pindah halaman *pagination*, atau *search*), **wajib** menampilkan *loading spinner*, *skeleton loader*, atau men-disable tombol/tabel agar *user experience* terjaga.
+* **API Pagination:** Implementasikan logika *pagination* murni dari API (bukan *slice array* di sisi *client*). Kirim parameter seperti `?page=2&limit=10` ke *endpoint* jika dibutuhkan oleh backend.
+* **Error Handling:** Jika *request API* gagal, tampilkan pesan *error* (misalnya dengan komponen *Toast* atau *Alert*) dan kembalikan *state loading* ke `false`.
+* Jangan gunakan *state management* eksternal. Manfaatkan `useState`, `useEffect`, dan *Custom Hooks* untuk memisahkan logika pemanggilan API dari komponen UI.

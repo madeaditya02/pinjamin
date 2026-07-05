@@ -25,9 +25,17 @@ export default function LoginPage() {
     try {
       const response = await api.post("/login", { email, password });
       const token = response.data?.data?.token;
+      const user = response.data?.data?.user;
+      const savedUser = JSON.stringify({
+          id: user?.id,
+          name: user?.name,
+          email: user?.email,
+          role: user?.role,
+        });
 
       if (token) {
         window.localStorage.setItem("token", token);
+        window.localStorage.setItem("pinjamin_user", savedUser);
       }
 
       router.push("/");

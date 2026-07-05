@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { FiGrid, FiInbox, FiLogOut } from "react-icons/fi";
+import { FiGrid, FiInbox, FiLogOut, FiClipboard, FiPackage, FiPlusCircle } from "react-icons/fi";
 import { api } from "@/services/api";
 
 type DashboardLayoutProps = {
@@ -18,15 +18,11 @@ type UserProfile = {
   profile_photo?: string | null;
 };
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: FiGrid },
-  { href: "/pengajuan", label: "Peminjaman", icon: FiInbox },
-];
-
 export function DashboardLayout({ children, title }: DashboardLayoutProps) {
+  const loggedUser = typeof window !== "undefined" ? window.localStorage.getItem("pinjamin_user") : null;
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(loggedUser ? JSON.parse(loggedUser) : null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
 
@@ -67,6 +63,20 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
     document.cookie = "token=; Max-Age=0; path=/";
     router.push("/login");
   };
+
+  const role = user?.role ?? "umum";
+  const navItems =
+    role === "organisasi"
+      ? [
+          { href: "/", label: "Dashboard", icon: FiGrid },
+          { href: "/peminjaman", label: "Kelola Peminjaman", icon: FiClipboard },
+          { href: "/pengajuan", label: "Pengajuan Peminjaman", icon: FiPlusCircle },
+          { href: "/inventaris", label: "Kelola Inventaris", icon: FiPackage },
+        ]
+      : [
+          { href: "/", label: "Dashboard", icon: FiGrid },
+          { href: "/pengajuan", label: "Peminjaman", icon: FiInbox },
+        ];
 
   return (
     <div className="min-h-screen bg-[#f5f7ff] text-slate-900">
@@ -132,7 +142,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
                         {user?.name ?? "User"}
                       </div>
                       <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                        {user?.role ?? "UMUM"}
+                        {role}
                       </div>
                     </>
                   )}
@@ -156,7 +166,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
               </button>
 
               {menuOpen ? (
-                <div className="absolute right-0 top-[calc(100%+10px)] w-56 rounded-md border border-[#d9def0] bg-white p-3 shadow-lg">
+                <div className="absolute right-0 top-[calc(100%+10px)] w-56 rounded-md border border-[#d9def0] bg-white p-3 shadow-lg z-20">
                   <div className="px-2 py-1">
                     {loadingUser ? (
                       <>
