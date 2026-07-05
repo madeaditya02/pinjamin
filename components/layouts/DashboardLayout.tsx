@@ -19,16 +19,17 @@ type UserProfile = {
 };
 
 export function DashboardLayout({ children, title }: DashboardLayoutProps) {
-  const loggedUser = typeof window !== "undefined" ? window.localStorage.getItem("pinjamin_user") : null;
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<UserProfile | null>(loggedUser ? JSON.parse(loggedUser) : null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
-
+  
   useEffect(() => {
     let active = true;
     Promise.resolve().then(() => {
+      const loggedUser = window.localStorage?.getItem("pinjamin_user") || null;
+      setUser(loggedUser ? JSON.parse(loggedUser) : null);
       if (active) setLoadingUser(true);
     });
 
@@ -101,13 +102,20 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
               const Icon = item.icon;
               const active =
                 pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-              return (
+              return active ? (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex h-[48px] items-center gap-3 px-5 text-[16px] transition ${
-                    active ? "bg-[#155dfc] text-white" : "text-slate-700 hover:bg-white"
-                  }`}
+                  className={`nav-link flex h-12 items-center gap-3 px-5 text-[16px] transition active`}
+                >
+                  <Icon className="text-[22px]" />
+                  <span>{item.label}</span>
+                </Link>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`nav-link flex h-12 items-center gap-3 px-5 text-[16px] transition`}
                 >
                   <Icon className="text-[22px]" />
                   <span>{item.label}</span>
