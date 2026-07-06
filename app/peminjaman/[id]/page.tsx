@@ -23,7 +23,7 @@ type Item = {
 
 type Detail = {
   id: number;
-  nama_peminjam?: string;
+  user_name?: string;
   tanggal_mulai?: string;
   tanggal_selesai?: string;
   waktu_mulai?: string;
@@ -115,7 +115,7 @@ export default function PeminjamanDetailPage() {
                 <div>
                   <div className="text-[16px] text-slate-600">Nama Peminjam</div>
                   <div className="mt-1 text-[18px] font-semibold text-slate-800">
-                    {data.nama_peminjam ?? "-"}
+                    {data.user_name ?? "-"}
                   </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
